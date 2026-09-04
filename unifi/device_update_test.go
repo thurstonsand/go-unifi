@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -53,11 +54,17 @@ func TestUpdateDeviceNeverWritesOutletState(t *testing.T) {
 	}
 
 	idx := int64(1)
+	acRecoverySeconds := int64(60)
+	internetLossSeconds := int64(5)
 	_, err = client.UpdateDevice(context.Background(), site, &Device{
-		ID:            id,
-		MAC:           mac,
-		Name:          "new",
-		OutletEnabled: false,
+		ID:                                    id,
+		MAC:                                   mac,
+		Name:                                  "new",
+		OutletEnabled:                         false,
+		OutletPowerCycleEnabled:               true,
+		OutletPowerCycleOnAcRecoveryEnabled:   true,
+		OutletPowerCycleOnAcRecoverySeconds:   &acRecoverySeconds,
+		OutletPowerCycleOnInternetLossSeconds: &internetLossSeconds,
 		OutletOverrides: []DeviceOutletOverrides{{
 			Index:        &idx,
 			RelayState:   false,
@@ -68,8 +75,8 @@ func TestUpdateDeviceNeverWritesOutletState(t *testing.T) {
 		t.Fatalf("UpdateDevice: %v", err)
 	}
 
-	for _, key := range []string{"outlet_enabled", "outlet_overrides"} {
-		if _, ok := updateBody[key]; ok {
+	for key := range updateBody {
+		if strings.HasPrefix(key, "outlet_") {
 			t.Errorf("update body contains prohibited key %q: %#v", key, updateBody)
 		}
 	}

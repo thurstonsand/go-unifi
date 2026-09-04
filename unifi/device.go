@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/ubiquiti-community/go-unifi/unifi/types"
 )
@@ -317,18 +318,15 @@ func getDiff[T any](original, target *T, skipFields ...string) (map[string]any, 
 
 // getDeviceDiff compares two Device objects and returns a map containing only changed fields.
 func getDeviceDiff(original, target *Device) (map[string]any, error) {
-	patch, err := getDiff(
-		original,
-		target,
-		"_id",
-		"site_id",
-		"adopted",
-		"state",
-		"outlet_enabled",
-		"outlet_overrides",
-	)
+	patch, err := getDiff(original, target, "_id", "site_id", "adopted", "state")
 	if err != nil {
 		return nil, err
+	}
+
+	for key := range patch {
+		if strings.HasPrefix(key, "outlet_") {
+			delete(patch, key)
+		}
 	}
 
 	return patch, nil
