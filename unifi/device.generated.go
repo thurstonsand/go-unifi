@@ -1170,37 +1170,40 @@ func (dst *DeviceRadioIDentifiers) UnmarshalJSON(b []byte) error {
 }
 
 type DeviceRadioTable struct {
-	AntennaGain           *int64                   `json:"antenna_gain,omitempty"` // ^-?([0-9]|[1-9][0-9])
-	AntennaID             *int64                   `json:"antenna_id,omitempty"`   // -1|[0-9]
-	Channel               string                   `json:"channel,omitempty"`      // [0-9]|[1][0-4]|1.5|2.5|3.5|4.5|5.5|6.5|5|16|17|21|25|29|33|34|36|37|38|40|41|42|44|45|46|48|49|52|53|56|57|60|61|64|65|69|73|77|81|85|89|93|97|100|101|104|105|108|109|112|113|117|116|120|121|124|125|128|129|132|133|136|137|140|141|144|145|149|153|157|161|165|169|173|177|181|183|184|185|187|188|189|192|193|196|197|201|205|209|213|217|221|225|229|233|auto
-	Dfs                   bool                     `json:"dfs,omitempty"`
-	HardNoiseFloorEnabled bool                     `json:"hard_noise_floor_enabled,omitempty"`
-	Ht                    *int64                   `json:"ht,omitempty"` // 20|40|80|160|240|320|1080|2160|4320
-	LoadbalanceEnabled    bool                     `json:"loadbalance_enabled,omitempty"`
-	Maxsta                *int64                   `json:"maxsta,omitempty"`   // [1-9]|[1-9][0-9]|1[0-9]{2}|200|^$
-	MinRssi               *int64                   `json:"min_rssi,omitempty"` // ^-(6[7-9]|[7-8][0-9]|90)$
-	MinRssiEnabled        bool                     `json:"min_rssi_enabled,omitempty"`
-	Name                  string                   `json:"name,omitempty"`
-	Radio                 string                   `json:"radio,omitempty"` // ng|na|ad|6e
-	RadioIDentifiers      []DeviceRadioIDentifiers `json:"radio_identifiers,omitempty"`
-	SensLevel             *int64                   `json:"sens_level,omitempty"` // ^-([5-8][0-9]|90)$
-	SensLevelEnabled      bool                     `json:"sens_level_enabled,omitempty"`
-	TxPower               string                   `json:"tx_power,omitempty"`      // [\d]+|auto
-	TxPowerMode           string                   `json:"tx_power_mode,omitempty"` // auto|medium|high|low|custom|disabled
-	VwireEnabled          bool                     `json:"vwire_enabled,omitempty"`
+	AntennaGain            *int64                   `json:"antenna_gain,omitempty"` // ^-?([0-9]|[1-9][0-9])
+	AntennaID              *int64                   `json:"antenna_id,omitempty"`   // -1|[0-9]
+	AssistedRoamingEnabled bool                     `json:"assisted_roaming_enabled,omitempty"`
+	AssistedRoamingRssi    *int64                   `json:"assisted_roaming_rssi,omitempty"` // ^-([6-7][0-9]|80)$
+	Channel                string                   `json:"channel,omitempty"`               // [0-9]|[1][0-4]|1.5|2.5|3.5|4.5|5.5|6.5|5|16|17|21|25|29|33|34|36|37|38|40|41|42|44|45|46|48|49|52|53|56|57|60|61|64|65|69|73|77|81|85|89|93|97|100|101|104|105|108|109|112|113|117|116|120|121|124|125|128|129|132|133|136|137|140|141|144|145|149|153|157|161|165|169|173|177|181|183|184|185|187|188|189|192|193|196|197|201|205|209|213|217|221|225|229|233|auto
+	Dfs                    bool                     `json:"dfs,omitempty"`
+	HardNoiseFloorEnabled  bool                     `json:"hard_noise_floor_enabled,omitempty"`
+	Ht                     *int64                   `json:"ht,omitempty"` // 20|40|80|160|240|320|1080|2160|4320
+	LoadbalanceEnabled     bool                     `json:"loadbalance_enabled,omitempty"`
+	Maxsta                 *int64                   `json:"maxsta,omitempty"`   // [1-9]|[1-9][0-9]|1[0-9]{2}|200|^$
+	MinRssi                *int64                   `json:"min_rssi,omitempty"` // ^-(6[7-9]|[7-8][0-9]|90)$
+	MinRssiEnabled         bool                     `json:"min_rssi_enabled,omitempty"`
+	Name                   string                   `json:"name,omitempty"`
+	Radio                  string                   `json:"radio,omitempty"` // ng|na|ad|6e
+	RadioIDentifiers       []DeviceRadioIDentifiers `json:"radio_identifiers,omitempty"`
+	SensLevel              *int64                   `json:"sens_level,omitempty"` // ^-([5-8][0-9]|90)$
+	SensLevelEnabled       bool                     `json:"sens_level_enabled,omitempty"`
+	TxPower                string                   `json:"tx_power,omitempty"`      // [\d]+|auto
+	TxPowerMode            string                   `json:"tx_power_mode,omitempty"` // auto|medium|high|low|custom|disabled
+	VwireEnabled           bool                     `json:"vwire_enabled,omitempty"`
 }
 
 func (dst *DeviceRadioTable) UnmarshalJSON(b []byte) error {
 	type Alias DeviceRadioTable
 	aux := &struct {
-		AntennaGain *types.Number `json:"antenna_gain"`
-		AntennaID   *types.Number `json:"antenna_id"`
-		Channel     types.Number  `json:"channel"`
-		Ht          *types.Number `json:"ht"`
-		Maxsta      *types.Number `json:"maxsta"`
-		MinRssi     *types.Number `json:"min_rssi"`
-		SensLevel   *types.Number `json:"sens_level"`
-		TxPower     types.Number  `json:"tx_power"`
+		AntennaGain         *types.Number `json:"antenna_gain"`
+		AntennaID           *types.Number `json:"antenna_id"`
+		AssistedRoamingRssi *types.Number `json:"assisted_roaming_rssi"`
+		Channel             types.Number  `json:"channel"`
+		Ht                  *types.Number `json:"ht"`
+		Maxsta              *types.Number `json:"maxsta"`
+		MinRssi             *types.Number `json:"min_rssi"`
+		SensLevel           *types.Number `json:"sens_level"`
+		TxPower             types.Number  `json:"tx_power"`
 
 		*Alias
 	}{
@@ -1225,6 +1228,14 @@ func (dst *DeviceRadioTable) UnmarshalJSON(b []byte) error {
 		} else if string(*aux.AntennaID) == "" {
 			var zero int64
 			dst.AntennaID = &zero
+		}
+	}
+	if aux.AssistedRoamingRssi != nil {
+		if val, err := aux.AssistedRoamingRssi.Int64(); err == nil {
+			dst.AssistedRoamingRssi = &val
+		} else if string(*aux.AssistedRoamingRssi) == "" {
+			var zero int64
+			dst.AssistedRoamingRssi = &zero
 		}
 	}
 	dst.Channel = aux.Channel.String()

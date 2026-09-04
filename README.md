@@ -1,5 +1,7 @@
 # Unifi Go SDK [![GoDoc](https://godoc.org/github.com/ubiquiti-community/go-unifi?status.svg)](https://godoc.org/github.com/ubiquiti-community/go-unifi)
 
+This is Thurston Sandberg's release branch for SDK additions required by [his UniFi provider fork](https://github.com/thurstonsand/terraform-provider-unifi). The provider fork's `.agents/skills/rebase/SKILL.md` owns maintenance of both sibling repositories.
+
 This was written primarily for use in my [Terraform provider for Unifi](https://github.com/ubiquiti-community/terraform-provider-unifi).
 
 ## Versioning
