@@ -660,3 +660,62 @@ func TestMarshalNetworkDNSNtpClear(t *testing.T) {
 		})
 	}
 }
+
+// TestMarshalNetworkWANMACOverride locks the WAN MAC clone into the wire
+// format. marshalWAN builds an explicit field list, so a WAN network carrying a
+// mac_override used to serialize without the key at all and the write silently
+// did nothing. The cleared case must still emit "mac_override":"" — that empty
+// value is the only way to tell the controller to drop a cloned address.
+func TestMarshalNetworkWANMACOverride(t *testing.T) {
+	base := func() *Network {
+		return &Network{
+			Name:            strPtr("WAN"),
+			Purpose:         PurposeWAN,
+			Enabled:         true,
+			WANType:         strPtr("dhcp"),
+			WANNetworkGroup: strPtr("WAN"),
+		}
+	}
+
+	t.Run("set", func(t *testing.T) {
+		n := base()
+		n.MACOverride = "02:00:00:00:00:01"
+		n.MACOverrideEnabled = true
+
+		data, err := json.Marshal(n)
+		if err != nil {
+			t.Fatalf("Failed to marshal network: %v", err)
+		}
+		var payload map[string]any
+		if err := json.Unmarshal(data, &payload); err != nil {
+			t.Fatalf("Failed to unmarshal JSON: %v", err)
+		}
+		if payload["mac_override"] != "02:00:00:00:00:01" {
+			t.Errorf("mac_override = %#v, want %q", payload["mac_override"], "02:00:00:00:00:01")
+		}
+		if payload["mac_override_enabled"] != true {
+			t.Errorf("mac_override_enabled = %#v, want true", payload["mac_override_enabled"])
+		}
+	})
+
+	t.Run("cleared", func(t *testing.T) {
+		data, err := json.Marshal(base())
+		if err != nil {
+			t.Fatalf("Failed to marshal network: %v", err)
+		}
+		var payload map[string]any
+		if err := json.Unmarshal(data, &payload); err != nil {
+			t.Fatalf("Failed to unmarshal JSON: %v", err)
+		}
+		v, ok := payload["mac_override"]
+		if !ok {
+			t.Fatal("mac_override was omitted; the controller keeps the old clone")
+		}
+		if v != "" {
+			t.Errorf("mac_override = %#v, want empty string", v)
+		}
+		if payload["mac_override_enabled"] != false {
+			t.Errorf("mac_override_enabled = %#v, want false", payload["mac_override_enabled"])
+		}
+	})
+}

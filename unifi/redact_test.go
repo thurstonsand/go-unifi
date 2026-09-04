@@ -1,7 +1,10 @@
 package unifi
 
 import (
+	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -54,5 +57,59 @@ func TestRedactSensitivePayload(t *testing.T) {
 	// Non-JSON body is omitted, not echoed.
 	if got := redactSensitivePayload([]byte("not json")); strings.Contains(got, "not json") {
 		t.Errorf("non-JSON body echoed: %q", got)
+	}
+}
+
+// TestRequestErrorRedactsMACOverride drives a real non-2xx response through
+// doRequest and proves the returned error never carries the WAN clone MAC. The
+// error message embeds the request body, so a sensitive key missing from
+// sensitivePayloadKeys leaks straight into provider diagnostics.
+func TestRequestErrorRedactsMACOverride(t *testing.T) {
+	const sentinelMAC = "de:ad:be:ef:00:99"
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if handleNewStyleSetup(w, r) {
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"meta":{"rc":"error","msg":"api.err.InvalidPayload"},"data":[]}`))
+	}))
+	defer srv.Close()
+
+	c, err := New(context.Background(), &Config{BaseURL: srv.URL, APIKey: "test-key"})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	network := &Network{
+		Name:               Ptr("wan"),
+		Purpose:            "wan",
+		MACOverride:        sentinelMAC,
+		MACOverrideEnabled: true,
+	}
+	err = c.doRequest(
+		context.Background(),
+		http.MethodPost,
+		"s/default/rest/networkconf",
+		network,
+		nil,
+	)
+	if err == nil {
+		t.Fatal("expected an error from the 400 response, got nil")
+	}
+
+	msg := err.Error()
+	if strings.Contains(msg, sentinelMAC) {
+		t.Errorf("error leaks mac_override: %s", msg)
+	}
+	if !strings.Contains(msg, `"mac_override":"REDACTED"`) {
+		t.Errorf("mac_override was not redacted in the payload; got: %s", msg)
+	}
+	if !strings.Contains(msg, `"mac_override_enabled":true`) {
+		t.Errorf("mac_override_enabled should survive redaction; got: %s", msg)
+	}
+	if !strings.Contains(msg, "api.err.InvalidPayload") {
+		t.Errorf("controller message not surfaced; got: %s", msg)
 	}
 }
