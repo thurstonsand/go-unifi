@@ -150,3 +150,18 @@ func TestStamgrExistingCommandsUnchanged(t *testing.T) {
 		t.Fatalf("BlockClientByMAC with empty data should stay NotFoundError, got: %v", err)
 	}
 }
+
+func TestBlockClientByMACRejectsNonOKResponseWithClientData(t *testing.T) {
+	srv, _ := stamgrTestServer(t, "default", http.StatusOK,
+		`{"meta":{"rc":"error","msg":"station command rejected"},"data":[{"_id":"client-id"}]}`)
+	c := newStamgrTestClient(t, srv)
+
+	err := c.BlockClientByMAC(context.Background(), "default", "aa:bb:cc:dd:ee:ff")
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected APIError for non-ok response, got: %v", err)
+	}
+	if apiErr.Message != "station command rejected" {
+		t.Errorf("APIError message = %q, want station command rejected", apiErr.Message)
+	}
+}
