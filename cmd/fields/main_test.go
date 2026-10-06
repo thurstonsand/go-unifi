@@ -170,3 +170,100 @@ func TestResourceTypes(t *testing.T) {
 		assert.Equal(t, expectation.Types, resource.Types)
 	})
 }
+
+// TestRetainsFieldsDroppedFromSpec pins the models the generator has to keep
+// producing after the 10.x field spec stopped describing them. Each one is
+// still live on the wire, and terraform-provider-unifi compiles against all of
+// them, so a regeneration that quietly dropped any would break the provider
+// rather than any test in this repository.
+func TestRetainsFieldsDroppedFromSpec(t *testing.T) {
+	for _, c := range []struct {
+		structName   string
+		resourcePath string
+		spec         string
+		want         []string
+	}{
+		{
+			structName:   "SettingIps",
+			resourcePath: "ips",
+			spec:         `{"ips_mode": "ids|ips|ipsInline|disabled"}`,
+			want: []string{
+				"Suppression",
+				"*SettingIpsSuppression",
+				`json:"suppression,omitempty"`,
+				"type SettingIpsSuppression struct",
+				"type SettingIpsAlerts struct",
+				"type SettingIpsTracking struct",
+				"type SettingIpsWhitelist struct",
+				"[]SettingIpsAlerts",
+				"[]SettingIpsWhitelist",
+				"[]SettingIpsTracking",
+			},
+		},
+		{
+			structName:   "SettingMdns",
+			resourcePath: "mdns",
+			spec:         `{"mode": "all|auto|custom"}`,
+			want: []string{
+				`EnabledFor           string   ` + "`" + `json:"enabled_for,omitempty"` + "`",
+				`EnabledForNetworkIDs []string ` + "`" + `json:"enabled_for_network_ids"` + "`",
+			},
+		},
+		{
+			structName:   "SettingUsg",
+			resourcePath: "usg",
+			spec:         `{"ftp_module": "true|false"}`,
+			want: []string{
+				`json:"geo_ip_filtering_block,omitempty"`,
+				`json:"geo_ip_filtering_countries,omitempty"`,
+				`json:"geo_ip_filtering_enabled"`,
+				`json:"geo_ip_filtering_traffic_direction,omitempty"`,
+			},
+		},
+		{
+			structName:   "WLAN",
+			resourcePath: "wlanconf",
+			spec:         `{"name": ".{1,32}"}`,
+			want:         []string{`json:"bandsteering_mode,omitempty"`},
+		},
+	} {
+		t.Run(c.structName, func(t *testing.T) {
+			resource := NewResource(c.structName, c.resourcePath)
+			if err := resource.processJSON([]byte(c.spec)); err != nil {
+				t.Fatalf("process spec: %v", err)
+			}
+			resource.addNonSpecNestedFields()
+
+			code, err := resource.generateCode(false)
+			if err != nil {
+				t.Fatalf("generate: %v", err)
+			}
+			for _, want := range c.want {
+				assert.Contains(t, code, want)
+			}
+		})
+	}
+}
+
+func TestRetainsAssistedRoamingFieldsDroppedFromSpec(t *testing.T) {
+	resource := NewResource("Device", "device")
+	if err := resource.processJSON([]byte(`{
+		"radio_table": [{"radio": "ng|na|ad|6e"}]
+	}`)); err != nil {
+		t.Fatalf("process spec: %v", err)
+	}
+	resource.addNonSpecNestedFields()
+
+	radioTable := resource.Types["DeviceRadioTable"]
+	if radioTable == nil {
+		t.Fatal("DeviceRadioTable type is missing")
+	}
+	enabled := radioTable.Fields["AssistedRoamingEnabled"]
+	if enabled == nil || enabled.JSONName != "assisted_roaming_enabled" || enabled.FieldType != "bool" {
+		t.Errorf("AssistedRoamingEnabled = %#v", enabled)
+	}
+	rssi := radioTable.Fields["AssistedRoamingRssi"]
+	if rssi == nil || rssi.JSONName != "assisted_roaming_rssi" || rssi.FieldType != "int64" || !rssi.IsPointer {
+		t.Errorf("AssistedRoamingRssi = %#v", rssi)
+	}
+}

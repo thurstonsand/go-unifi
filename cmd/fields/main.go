@@ -182,10 +182,7 @@ func NewResource(structName string, resourcePath string) *ResourceInfo {
 	case resource.IsSetting():
 		resource.ResourcePath = strcase.ToSnake(strings.TrimPrefix(structName, "Setting"))
 		baseType.Fields[" Key"] = NewFieldInfo("Key", "key", fields.String, "", false, false, false, "")
-		if resource.StructName == "SettingUsg" {
-			// Removed in v7, retaining for backwards compatibility
-			baseType.Fields["MdnsEnabled"] = NewFieldInfo("MdnsEnabled", "mdns_enabled", fields.Bool, "", false, false, false, "")
-		}
+		addSettingCompatFields(resource, baseType)
 	case resource.StructName == "DNSRecord":
 		resource.ResourcePath = "static-dns"
 	case resource.StructName == "FirewallZone":
@@ -282,6 +279,10 @@ func NewResource(structName string, resourcePath string) *ResourceInfo {
 	case resource.StructName == "WLAN":
 		// this field removed in v6, retaining for backwards compatibility
 		baseType.Fields["WLANGroupID"] = NewFieldInfo("WLANGroupID", "wlangroup_id", fields.String, "", true, false, false, "")
+		// Per-SSID band steering left the 10.x spec. Controllers that support it
+		// still read the key, and omitempty keeps it off the wire for the ones
+		// that do not.
+		baseType.Fields["BandsteeringMode"] = NewFieldInfo("BandsteeringMode", "bandsteering_mode", fields.String, "off|equal|prefer_5g", true, false, false, "")
 	case resource.StructName == "BGPConfig":
 		resource.ResourcePath = "bgp/config"
 	}
@@ -644,12 +645,7 @@ func main() {
 			continue
 		}
 
-		// Add fields not present in the JAR schema to nested types.
-		if resource.StructName == "Device" {
-			if portOverrides, ok := resource.Types["DevicePortOverrides"]; ok {
-				portOverrides.Fields["TaggedNetworkIDs"] = NewFieldInfo("TaggedNetworkIDs", "tagged_networkconf_ids", fields.String, "", true, true, false, "")
-			}
-		}
+		resource.addNonSpecNestedFields()
 
 		// Add resource to specification generator
 		specGen.AddResource(resource)

@@ -874,8 +874,10 @@ func parseRetryAfter(resp *http.Response) time.Duration {
 }
 
 // sensitivePayloadKeys are substrings of JSON field names whose values carry
-// secrets (WireGuard/IPsec keys, passphrases, RADIUS secrets, …) and must be
-// redacted from error messages and logs.
+// secrets (WireGuard/IPsec keys, passphrases, RADIUS secrets, …) or hardware
+// identities a user marked sensitive (the WAN mac_override clone address) and
+// must be redacted from error messages and logs. Only string values are
+// replaced, so the sibling mac_override_enabled bool survives intact.
 var sensitivePayloadKeys = []string{
 	"private_key",
 	"passphrase",
@@ -883,6 +885,7 @@ var sensitivePayloadKeys = []string{
 	"password",
 	"secret",
 	"psk",
+	"mac_override",
 }
 
 // redactSensitivePayload returns the JSON request body with the values of any

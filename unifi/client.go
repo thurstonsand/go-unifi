@@ -35,7 +35,7 @@ func (c *ApiClient) stamgrMeta(
 	ctx context.Context,
 	site, cmd string,
 	data map[string]any,
-) (string, []Client, error) {
+) (meta, []Client, error) {
 	reqBody := map[string]any{}
 
 	maps.Copy(reqBody, data)
@@ -49,10 +49,10 @@ func (c *ApiClient) stamgrMeta(
 
 	err := c.do(ctx, http.MethodPost, fmt.Sprintf("api/s/%s/cmd/stamgr", site), reqBody, &respBody)
 	if err != nil {
-		return "", nil, err
+		return meta{}, nil, err
 	}
 
-	return respBody.Meta.RC, respBody.Data, nil
+	return respBody.Meta, respBody.Data, nil
 }
 
 func (c *ApiClient) stamgr(
@@ -60,7 +60,10 @@ func (c *ApiClient) stamgr(
 	site, cmd string,
 	data map[string]any,
 ) ([]Client, error) {
-	_, clients, err := c.stamgrMeta(ctx, site, cmd, data)
+	responseMeta, clients, err := c.stamgrMeta(ctx, site, cmd, data)
+	if err == nil {
+		err = responseMeta.error()
+	}
 	return clients, err
 }
 
@@ -81,11 +84,11 @@ func (c *ApiClient) AuthorizeClientByMAC(ctx context.Context, site, mac, apMAC, 
 		params["minutes"] = m
 	}
 
-	rc, clients, err := c.stamgrMeta(ctx, site, "authorize-guest", params)
+	responseMeta, clients, err := c.stamgrMeta(ctx, site, "authorize-guest", params)
 	if err != nil {
 		return err
 	}
-	if rc == "ok" && len(clients) <= 1 {
+	if responseMeta.RC == "ok" && len(clients) <= 1 {
 		return nil
 	}
 

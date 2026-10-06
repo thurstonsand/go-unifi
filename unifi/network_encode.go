@@ -546,6 +546,11 @@ func (n *Network) marshalWAN() ([]byte, error) {
 		WANIPAliases   []string                `json:"wan_ip_aliases"`
 		WANDHCPOptions []NetworkWANDHCPOptions `json:"wan_dhcp_options"`
 
+		// MAC clone. Sent without omitempty: an empty mac_override is how the
+		// controller is told to drop a previously cloned address.
+		MACOverride        string `json:"mac_override"`
+		MACOverrideEnabled bool   `json:"mac_override_enabled"`
+
 		// Provider capabilities
 		WANProviderCapabilities *NetworkWANProviderCapabilities `json:"wan_provider_capabilities,omitempty"`
 	}{
@@ -614,6 +619,10 @@ func (n *Network) marshalWAN() ([]byte, error) {
 		ReportWANEvent: n.ReportWANEvent,
 		WANIPAliases:   orEmptySlice(n.WANIPAliases),
 		WANDHCPOptions: orEmptyWANDHCPOptions(n.WANDHCPOptions),
+
+		// MAC clone
+		MACOverride:        n.MACOverride,
+		MACOverrideEnabled: n.MACOverrideEnabled,
 
 		// Provider capabilities
 		WANProviderCapabilities: n.WANProviderCapabilities,
